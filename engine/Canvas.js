@@ -1,13 +1,4 @@
-class Player {
-    constructor(name) {
-        this.name = name;
-    }
-    getName() {
-        return this.name;
-    }
-}
-
-class Canvas {
+export class Canvas {
     #fields;
     #board;
     #boardPosition  = {top: 100, left: 100};
@@ -17,6 +8,7 @@ class Canvas {
     #borderFields   = 0;
     #fieldsInLine   = 0;
     #fieldsInColumn = 0;
+    #fieldMarkerProportion = 0.6;
 
     constructor(id) {
         this.#board             = document.getElementById(id);
@@ -37,6 +29,18 @@ class Canvas {
 
     getBoard() {
         return this.#board;
+    }
+
+    getFieldsInLine() {
+        return this.#fieldsInLine;
+    }
+
+    getFieldsInColumn() {
+        return this.#fieldsInLine;
+    }
+
+    getBorderFields() {
+        return this.#borderFields;
     }
 
     drawBoard() {
@@ -89,6 +93,8 @@ class Canvas {
     }
 
     drawLine(params) {
+        this.configureContext();
+        
         this.#boardContext.beginPath();
         this.#boardContext.moveTo(params.leftStart, params.topStart);
         this.#boardContext.lineTo(params.leftEnd, params.topEnd);
@@ -130,84 +136,54 @@ class Canvas {
         this.#boardContext.lineWidth    = 1;
     }
 
-    drowCircle() {
-        let circleR = Math.floor(( this.#fieldWidth * 0.6 ) / 2);
+    drowCircle(fieldPosition) {
+        let circleR = Math.floor(( this.#fieldWidth * this.#fieldMarkerProportion ) / 2);
         this.#boardContext.beginPath();
-        this.#boardContext.arc(100, 75, circleR, 0, 2 * Math.PI);
+
+        this.#boardContext.arc(fieldPosition.startX, fieldPosition.startY, circleR, 0, 2 * Math.PI);
         this.#boardContext.stroke();
     }
 
-    drowCross() {
+    drowCross(fieldPosition) {
+        const crossWidth    = Math.floor( this.#fieldWidth * this.#fieldMarkerProportion );
+        const crossHeight   = Math.floor( this.#fieldHeight * this.#fieldMarkerProportion );
+        const marginLeft    = Math.floor( ( this.#fieldWidth * ( 1 - this.#fieldMarkerProportion) ) / 2 );
+        const marginTop     = Math.floor( ( this.#fieldHeight * ( 1 - this.#fieldMarkerProportion) ) / 2 ) ;
+
+        const startX = fieldPosition.startX;
+        const startY = fieldPosition.startY;
         
+        const line1 = {
+            leftStart: startX + marginLeft,
+            topStart: startY + marginTop,
+            leftEnd: startX + marginLeft + crossWidth,
+            topEnd: startY + marginTop + crossHeight
+        };
+
+        const line2 = {
+            leftStart: startX + marginLeft,
+            topStart: startY + marginTop + crossHeight,
+            leftEnd: startX + marginLeft + crossWidth,
+            topEnd: startY + marginTop
+        };
+
+        this.drawLine(line1);
+        this.drawLine(line2);
     }
 
     makeMatrix(gameFieldsQuantity) {
         this.fields = Array.from(Array(gameFieldsQuantity).keys())
     }
 
-    drowCurrentPlayerName() {
-
-    }
-}
-
-class Game {
-    
-    #players = [];
-    #currentPlayer;
-    #canvas;
-
-    constructor(canvas) {
-        this.#canvas = canvas;
-    }
-
-    setEvents() {
-        this.#canvas.getBoard().addEventListener('click', (e) => {
-            // get positon from click place
-            let rect        = e.target.getBoundingClientRect();
-            let drawRange   = this.#canvas.getDrawRange();
-
-            if(e.clientY >= rect.y + drawRange.topStart && 
-                e.clientY <= rect.y + drawRange.topEnd &&
-                e.clientX >= rect.x + drawRange.leftStart &&
-                e.clientX <= rect.x + drawRange.leftEnd) {
-
-                    console.log('X:');
-                    console.log(e.clientX - rect.x + drawRange.leftStart);
-                    console.log('Y:');
-                    console.log(e.clientX - rect.y + drawRange.topStart);
-                    console.log('jestem na mapie i obliczam na którym polu jestem ');
-                    console.log('potem dodaje ');
-
-            }
-
-        });
-    }
-
-    drawFirstPlayer(max, min) {
-        this.#currentPlayer = Math.floor(Math.random() * (max - min + 1 ) + 1);
-    }
-
-    addPlayer(player) {
-        this.#players.push(player);
-    }
-
-    start() {
-        this.#canvas.drawBoard();
-        this.drawFirstPlayer();
-        this.#canvas.drowCurrentPlayerName();
-        this.setEvents();
+    drowText(textToFill) {
+        this.#boardContext.font = "20px Georgia";
+        const textContainerMargin       = 20;
+        const textContainerTop          = this.#board.height - textContainerMargin;
+        const textContainerWidth        = this.#board.width - ( textContainerMargin * 2 );
+        const centerContainerPosition   = this.#board.width / 2 ;
         
+        // center context to start position
+        this.#boardContext.textAlign = "center";
+        this.#boardContext.fillText(textToFill, centerContainerPosition, textContainerTop, textContainerWidth);
     }
-
-}
-
-window.onload = function() {
-    const player1   = new Player('zosia');
-    const player2   = new Player('tosia');
-    const canvas    = new Canvas('game');
-
-    const game = new Game(canvas);
-    game.addPlayer(player1);
-    game.addPlayer(player2);
-    game.start();
 }
